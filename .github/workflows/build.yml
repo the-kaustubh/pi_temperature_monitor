@@ -1,16 +1,11 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
-name: Go
+name: Build Go binaries
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    tags:
+      - "*"
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
@@ -21,8 +16,27 @@ jobs:
       with:
         go-version: 1.19
 
-    - name: Build
-      run: go build -v ./...
+    - name: get tag
+      id: tag
+      uses: dawidd6/action-get-tag@v1
 
-    - name: Test
-      run: go test -v ./...
+    - name: Use tag
+      run: echo ${{steps.tag.outputs.tag}}
+
+    - run: mkdir bin
+    - name: Build for RPi Zero W
+      run: GOOS=linux GOARCH=arm GOARM=6 go build -o bin/pimon-zerow-${{ steps.tag.outputs.tag }}
+
+    - name: Build for RPi 4 B
+      run: GOOS=linux GOARCH=arm GOARM=7 go build -o bin/pimon-rpi4b-${{ steps.tag.outputs.tag }}
+
+    - name: Copy dir to server
+      uses: nogsantos/scp-deploy@master
+      with:
+        src: bin/*
+        port: 22
+        host: ${{ secrets.HOST }}
+        remote: pimon
+        user: ${{ secrets.USER }}
+        key: ${{ secrets.SSH_KEY }}
+
