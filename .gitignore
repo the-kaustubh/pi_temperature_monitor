@@ -1,0 +1,5 @@
+bin/
+logs/
+
+pi-monitoring*
+pi_temperature_monitor
